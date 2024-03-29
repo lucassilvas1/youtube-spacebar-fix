@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Youtube Spacebar resume/pause fix
-// @namespace
+// @namespace    https://github.com/lucassilvas1/youtube-spacebar-fix
 // @description  Fixes Spacebar not resuming/pausing YouTube videos after alt-tabbing
 // @version      1.0
 // @author       lucassilvas1
