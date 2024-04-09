@@ -2,7 +2,7 @@
 // @name         Youtube Spacebar resume/pause fix
 // @namespace    https://github.com/lucassilvas1/youtube-spacebar-fix
 // @description  Fixes Spacebar not resuming/pausing YouTube videos after alt-tabbing
-// @version      1.0
+// @version      1.1
 // @author       lucassilvas1
 // @match        https://www.youtube.com/*
 // @run-at       document-start
@@ -13,19 +13,45 @@
   // Check if current page is a video page
   if (!new URL(location.href).searchParams.get("v")) return;
 
-  let video = null;
+  const LISTENER_TRIGGER_DELAY = 10; // Try increasing this number if the script doesn't always work for you
 
-  addListener();
+  const playerState = {
+    UNSTARTED: -1,
+    ENDED: 0,
+    PLAYING: 1,
+    PAUSED: 2,
+    BUFFERING: 3,
+    CUED: 5,
+  };
+  Object.freeze(playerState);
 
-  // Get video element and cache it once it's found
-  function getVideo() {
-    if (video) return video;
-    video = document.querySelector(".video-stream.html5-main-video");
-    if (!video) console.error("Could not find video element");
-    return video;
+  /**
+   * @type {(() => void) | null}
+   */
+  let playVideo = null;
+  /**
+   * @type {(() => void) | null}
+   */
+  let pauseVideo = null;
+  /**
+   * @type {(() => -1 | 0 | 1 | 2 | 3 | 5) | null}
+   */
+  let getPlayerState = null;
+
+  addKeyListener();
+  document.addEventListener("yt-player-updated", onUpdate);
+
+  function onUpdate({ detail }) {
+    playVideo = detail.playVideo;
+    pauseVideo = detail.pauseVideo;
+    getPlayerState = detail.getPlayerState;
   }
 
-  // Ignore keyboard events if they came from an input
+  /**
+   * Ignore keyboard events if they came from an input so the user can still type comments/search
+   * @param {Element} element
+   * @returns
+   */
   function isInput(element) {
     if (element.getAttribute("contenteditable") === "true") {
       return true;
@@ -42,18 +68,33 @@
     return false;
   }
 
-  function isPlaying() {
-    return getVideo().currentTime && !getVideo().paused && !getVideo().ended;
-  }
-
-  function addListener() {
+  function addKeyListener() {
     window.addEventListener(
       "keyup",
       (e) => {
+        // Ignore event if it came from a text input
         if (e.key !== " " || isInput(document.activeElement)) return;
 
-        if (isPlaying()) getVideo().pause();
-        else getVideo().play();
+        const oldState = getPlayerState();
+
+        setTimeout(() => {
+          const state = getPlayerState();
+
+          if (oldState !== state) return;
+
+          switch (state) {
+            case playerState.PLAYING:
+              pauseVideo();
+              break;
+            case playerState.PAUSED:
+            case playerState.CUED:
+            case playerState.ENDED:
+            case playerState.UNSTARTED:
+              playVideo();
+              break;
+            // Do nothing if video is buffering
+          }
+        }, LISTENER_TRIGGER_DELAY);
       },
       { capture: true }
     );
