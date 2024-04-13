@@ -2,7 +2,7 @@
 // @name         Youtube Spacebar resume/pause fix
 // @namespace    https://github.com/lucassilvas1/youtube-spacebar-fix
 // @description  Fixes Spacebar not resuming/pausing YouTube videos after alt-tabbing
-// @version      1.1
+// @version      1.1.1
 // @author       lucassilvas1
 // @match        https://www.youtube.com/*
 // @run-at       document-start
@@ -10,9 +10,6 @@
 // ==/UserScript==
 
 (function () {
-  // Check if current page is a video page
-  if (!new URL(location.href).searchParams.get("v")) return;
-
   const LISTENER_TRIGGER_DELAY = 10; // Try increasing this number if the script doesn't always work for you
 
   const playerState = {
